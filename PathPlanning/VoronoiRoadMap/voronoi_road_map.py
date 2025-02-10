@@ -9,8 +9,12 @@ author: Atsushi Sakai (@Atsushi_twi)
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from dijkstra_search import DijkstraSearch
 from scipy.spatial import cKDTree, Voronoi
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
+from VoronoiRoadMap.dijkstra_search import DijkstraSearch
 
 show_animation = True
 
@@ -142,20 +146,20 @@ def main():
     oy = []
 
     for i in range(60):
-        ox.append(i)
+        ox.append(float(i))
         oy.append(0.0)
     for i in range(60):
         ox.append(60.0)
-        oy.append(i)
+        oy.append(float(i))
     for i in range(61):
-        ox.append(i)
+        ox.append(float(i))
         oy.append(60.0)
     for i in range(61):
         ox.append(0.0)
-        oy.append(i)
+        oy.append(float(i))
     for i in range(40):
         ox.append(20.0)
-        oy.append(i)
+        oy.append(float(i))
     for i in range(40):
         ox.append(40.0)
         oy.append(60.0 - i)

@@ -7,21 +7,15 @@ author: AtsushiSakai(@Atsushi_twi)
 """
 import copy
 import math
-import os
 import random
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../LQRPlanner/")
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../RRTStar/")
-
-try:
-    from LQRplanner import LQRPlanner
-    from rrt_star import RRTStar
-except ImportError:
-    raise
+from LQRPlanner.lqr_planner import LQRPlanner
+from RRTStar.rrt_star import RRTStar
 
 show_animation = True
 
@@ -185,7 +179,7 @@ class LQRRRTStar(RRTStar):
         dx = np.diff(px)
         dy = np.diff(py)
 
-        clen = [math.sqrt(idx ** 2 + idy ** 2) for (idx, idy) in zip(dx, dy)]
+        clen = [math.hypot(idx, idy) for (idx, idy) in zip(dx, dy)]
 
         return px, py, clen
 

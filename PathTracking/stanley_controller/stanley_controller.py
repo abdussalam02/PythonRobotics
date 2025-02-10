@@ -12,16 +12,11 @@ Ref:
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-import os
+import pathlib
+from utils.angle import angle_mod
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../PathPlanning/CubicSpline/")
-
-try:
-    import cubic_spline_planner
-except:
-    raise
-
+from PathPlanning.CubicSpline import cubic_spline_planner
 
 k = 0.5  # control gain
 Kp = 1.0  # speed proportional gain
@@ -32,7 +27,7 @@ max_steer = np.radians(30.0)  # [rad] max steering angle
 show_animation = True
 
 
-class State(object):
+class State:
     """
     Class representing the state of a vehicle.
 
@@ -44,7 +39,7 @@ class State(object):
 
     def __init__(self, x=0.0, y=0.0, yaw=0.0, v=0.0):
         """Instantiate the object."""
-        super(State, self).__init__()
+        super().__init__()
         self.x = x
         self.y = y
         self.yaw = yaw
@@ -112,13 +107,7 @@ def normalize_angle(angle):
     :param angle: (float)
     :return: (float) Angle in radian in [-pi, pi]
     """
-    while angle > np.pi:
-        angle -= 2.0 * np.pi
-
-    while angle < -np.pi:
-        angle += 2.0 * np.pi
-
-    return angle
+    return angle_mod(angle)
 
 
 def calc_target_index(state, cx, cy):

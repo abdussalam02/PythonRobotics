@@ -5,21 +5,15 @@ author: Atsushi Sakai
 """
 
 import math
-import os
-import sys
 from enum import IntEnum
-
 import numpy as np
-from scipy.spatial.transform import Rotation as Rot
 import matplotlib.pyplot as plt
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../Mapping/")
-
-try:
-    from grid_map_lib.grid_map_lib import GridMap
-except ImportError:
-    raise
+from utils.angle import rot_mat_2d
+from Mapping.grid_map_lib.grid_map_lib import GridMap, FloatGrid
 
 do_animation = True
 
@@ -47,8 +41,7 @@ class SweepSearcher:
         n_y_index = c_y_index
 
         # found safe grid
-        if not grid_map.check_occupied_from_xy_index(n_x_index, n_y_index,
-                                                     occupied_val=0.5):
+        if not self.check_occupied(n_x_index, n_y_index, grid_map):
             return n_x_index, n_y_index
         else:  # occupied
             next_c_x_index, next_c_y_index = self.find_safe_turning_grid(
@@ -57,18 +50,19 @@ class SweepSearcher:
                 # moving backward
                 next_c_x_index = -self.moving_direction + c_x_index
                 next_c_y_index = c_y_index
-                if grid_map.check_occupied_from_xy_index(next_c_x_index,
-                                                         next_c_y_index):
+                if self.check_occupied(next_c_x_index, next_c_y_index, grid_map, FloatGrid(1.0)):
                     # moved backward, but the grid is occupied by obstacle
                     return None, None
             else:
                 # keep moving until end
-                while not grid_map.check_occupied_from_xy_index(
-                        next_c_x_index + self.moving_direction,
-                        next_c_y_index, occupied_val=0.5):
+                while not self.check_occupied(next_c_x_index + self.moving_direction, next_c_y_index, grid_map):
                     next_c_x_index += self.moving_direction
                 self.swap_moving_direction()
             return next_c_x_index, next_c_y_index
+
+    @staticmethod
+    def check_occupied(c_x_index, c_y_index, grid_map, occupied_val=FloatGrid(0.5)):
+        return grid_map.check_occupied_from_xy_index(c_x_index, c_y_index, occupied_val)
 
     def find_safe_turning_grid(self, c_x_index, c_y_index, grid_map):
 
@@ -78,17 +72,14 @@ class SweepSearcher:
             next_y_ind = d_y_ind + c_y_index
 
             # found safe grid
-            if not grid_map.check_occupied_from_xy_index(next_x_ind,
-                                                         next_y_ind,
-                                                         occupied_val=0.5):
+            if not self.check_occupied(next_x_ind, next_y_ind, grid_map):
                 return next_x_ind, next_y_ind
 
         return None, None
 
     def is_search_done(self, grid_map):
         for ix in self.x_indexes_goal_y:
-            if not grid_map.check_occupied_from_xy_index(ix, self.goal_y,
-                                                         occupied_val=0.5):
+            if not self.check_occupied(ix, self.goal_y, grid_map):
                 return False
 
         # all lower grid is occupied
@@ -148,16 +139,14 @@ def convert_grid_coordinate(ox, oy, sweep_vec, sweep_start_position):
     tx = [ix - sweep_start_position[0] for ix in ox]
     ty = [iy - sweep_start_position[1] for iy in oy]
     th = math.atan2(sweep_vec[1], sweep_vec[0])
-    rot = Rot.from_euler('z', th).as_matrix()[0:2, 0:2]
-    converted_xy = np.stack([tx, ty]).T @ rot
+    converted_xy = np.stack([tx, ty]).T @ rot_mat_2d(th)
 
     return converted_xy[:, 0], converted_xy[:, 1]
 
 
 def convert_global_coordinate(x, y, sweep_vec, sweep_start_position):
     th = math.atan2(sweep_vec[1], sweep_vec[0])
-    rot = Rot.from_euler('z', -th).as_matrix()[0:2, 0:2]
-    converted_xy = np.stack([x, y]).T @ rot
+    converted_xy = np.stack([x, y]).T @ rot_mat_2d(-th)
     rx = [ix + sweep_start_position[0] for ix in converted_xy[:, 0]]
     ry = [iy + sweep_start_position[1] for iy in converted_xy[:, 1]]
     return rx, ry
@@ -176,7 +165,7 @@ def search_free_grid_index_at_edge_y(grid_map, from_upper=False):
 
     for iy in x_range:
         for ix in y_range:
-            if not grid_map.check_occupied_from_xy_index(ix, iy):
+            if not SweepSearcher.check_occupied(ix, iy, grid_map):
                 y_index = iy
                 x_indexes.append(ix)
         if y_index:
@@ -193,7 +182,7 @@ def setup_grid_map(ox, oy, resolution, sweep_direction, offset_grid=10):
 
     grid_map = GridMap(width, height, resolution, center_x, center_y)
     grid_map.print_grid_map_info()
-    grid_map.set_value_from_polygon(ox, oy, 1.0, inside=False)
+    grid_map.set_value_from_polygon(ox, oy, FloatGrid(1.0), inside=False)
     grid_map.expand_grid()
 
     x_inds_goal_y = []
@@ -211,7 +200,7 @@ def setup_grid_map(ox, oy, resolution, sweep_direction, offset_grid=10):
 def sweep_path_search(sweep_searcher, grid_map, grid_search_animation=False):
     # search start grid
     c_x_index, c_y_index = sweep_searcher.search_start_grid(grid_map)
-    if not grid_map.set_value_from_xy_index(c_x_index, c_y_index, 0.5):
+    if not grid_map.set_value_from_xy_index(c_x_index, c_y_index, FloatGrid(0.5)):
         print("Cannot find start grid")
         return [], []
 
@@ -243,7 +232,7 @@ def sweep_path_search(sweep_searcher, grid_map, grid_search_animation=False):
         px.append(x)
         py.append(y)
 
-        grid_map.set_value_from_xy_index(c_x_index, c_y_index, 0.5)
+        grid_map.set_value_from_xy_index(c_x_index, c_y_index, FloatGrid(0.5))
 
         if grid_search_animation:
             grid_map.plot_grid_map(ax=ax)

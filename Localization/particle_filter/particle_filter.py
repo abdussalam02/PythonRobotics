@@ -5,12 +5,16 @@ Particle Filter localization sample
 author: Atsushi Sakai (@Atsushi_twi)
 
 """
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
 import math
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial.transform import Rotation as Rot
+
+from utils.angle import rot_mat_2d
 
 # Estimation parameter of PF
 Q = np.diag([0.2]) ** 2  # range error
@@ -92,10 +96,10 @@ def calc_covariance(x_est, px, pw):
     calculate covariance matrix
     see ipynb doc
     """
-    cov = np.zeros((3, 3))
+    cov = np.zeros((4, 4))
     n_particle = px.shape[1]
     for i in range(n_particle):
-        dx = (px[:, i:i + 1] - x_est)[0:3]
+        dx = (px[:, i:i + 1] - x_est)
         cov += pw[0, i] * dx @ dx.T
     cov *= 1.0 / (1.0 - pw @ pw.T)
 
@@ -189,10 +193,9 @@ def plot_covariance_ellipse(x_est, p_est):  # pragma: no cover
     x = [a * math.cos(it) for it in t]
     y = [b * math.sin(it) for it in t]
     angle = math.atan2(eig_vec[1, big_ind], eig_vec[0, big_ind])
-    rot = Rot.from_euler('z', angle).as_matrix()[0:2, 0:2]
-    fx = rot.dot(np.array([[x, y]]))
-    px = np.array(fx[0, :] + x_est[0, 0]).flatten()
-    py = np.array(fx[1, :] + x_est[1, 0]).flatten()
+    fx = rot_mat_2d(angle) @ np.array([[x, y]])
+    px = np.array(fx[:, 0] + x_est[0, 0]).flatten()
+    py = np.array(fx[:, 1] + x_est[1, 0]).flatten()
     plt.plot(px, py, "--r")
 
 

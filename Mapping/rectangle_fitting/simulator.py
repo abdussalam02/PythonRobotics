@@ -5,12 +5,16 @@ Simulator
 author: Atsushi Sakai
 
 """
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import random
-from scipy.spatial.transform import Rotation as Rot
+
+from utils.angle import rot_mat_2d
 
 
 class VehicleSimulator:
@@ -41,8 +45,7 @@ class VehicleSimulator:
         plt.plot(gx, gy, "--b")
 
     def calc_global_contour(self):
-        rot = Rot.from_euler('z', self.yaw).as_matrix()[0:2, 0:2]
-        gxy = np.stack([self.vc_x, self.vc_y]).T @ rot
+        gxy = np.stack([self.vc_x, self.vc_y]).T @ rot_mat_2d(self.yaw)
         gx = gxy[:, 0] + self.x
         gy = gxy[:, 1] + self.y
 
@@ -135,13 +138,3 @@ class LidarSimulator:
                 ry.append(range_db[i] * np.sin(t))
 
         return rx, ry
-
-
-def main():
-    print("start!!")
-
-    print("done!!")
-
-
-if __name__ == '__main__':
-    main()

@@ -7,18 +7,13 @@ Path planning Sample Code with RRT with path smoothing
 """
 
 import math
-import os
 import random
-import sys
-
 import matplotlib.pyplot as plt
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-try:
-    from rrt import RRT
-except ImportError:
-    raise
+from rrt import RRT
 
 show_animation = True
 
@@ -28,7 +23,7 @@ def get_path_length(path):
     for i in range(len(path) - 1):
         dx = path[i + 1][0] - path[i][0]
         dy = path[i + 1][1] - path[i][1]
-        d = math.sqrt(dx * dx + dy * dy)
+        d = math.hypot(dx, dy)
         le += d
 
     return le
@@ -41,7 +36,7 @@ def get_target_point(path, targetL):
     for i in range(len(path) - 1):
         dx = path[i + 1][0] - path[i][0]
         dy = path[i + 1][1] - path[i][1]
-        d = math.sqrt(dx * dx + dy * dy)
+        d = math.hypot(dx, dy)
         le += d
         if le >= targetL:
             ti = i - 1
@@ -72,7 +67,7 @@ def line_collision_check(first, second, obstacleList):
         return False
 
     for (ox, oy, size) in obstacleList:
-        d = abs(a * ox + b * oy + c) / (math.sqrt(a * a + b * b))
+        d = abs(a * ox + b * oy + c) / (math.hypot(a, b))
         if d <= size:
             return False
 

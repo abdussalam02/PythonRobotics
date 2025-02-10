@@ -28,11 +28,11 @@ Rojas (rafaelrojasmiliani@gmail.com)
 
 import math
 import random
-from sobol import sobol_quasirand
 import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
+
+from sobol import sobol_quasirand
 
 show_animation = True
 

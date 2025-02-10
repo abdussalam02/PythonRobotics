@@ -7,17 +7,12 @@ author: Atsushi Sakai(@Atsushi_twi)
 """
 
 import math
-import os
 import sys
-
 import matplotlib.pyplot as plt
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../RRT/")
-
-try:
-    from rrt import RRT
-except ImportError:
-    raise
+from RRT.rrt import RRT
 
 show_animation = True
 
@@ -59,6 +54,7 @@ class RRTStar(RRT):
         self.connect_circle_dist = connect_circle_dist
         self.goal_node = self.Node(goal[0], goal[1])
         self.search_until_max_iter = search_until_max_iter
+        self.node_list = []
 
     def planning(self, animation=True):
         """
@@ -167,9 +163,13 @@ class RRTStar(RRT):
         if not safe_goal_inds:
             return None
 
-        min_cost = min([self.node_list[i].cost for i in safe_goal_inds])
-        for i in safe_goal_inds:
-            if self.node_list[i].cost == min_cost:
+        safe_goal_costs = [self.node_list[i].cost +
+                           self.calc_dist_to_goal(self.node_list[i].x, self.node_list[i].y)
+                           for i in safe_goal_inds]
+
+        min_cost = min(safe_goal_costs)
+        for i, cost in zip(safe_goal_inds, safe_goal_costs):
+            if cost == min_cost:
                 return i
 
         return None
@@ -190,7 +190,7 @@ class RRTStar(RRT):
                     radius r
         """
         nnode = len(self.node_list) + 1
-        r = self.connect_circle_dist * math.sqrt((math.log(nnode) / nnode))
+        r = self.connect_circle_dist * math.sqrt(math.log(nnode) / nnode)
         # if expand_dist exists, search vertices in a range no more than
         # expand_dist
         if hasattr(self, 'expand_dis'):
@@ -229,13 +229,11 @@ class RRTStar(RRT):
             improved_cost = near_node.cost > edge_node.cost
 
             if no_collision and improved_cost:
-                near_node.x = edge_node.x
-                near_node.y = edge_node.y
-                near_node.cost = edge_node.cost
-                near_node.path_x = edge_node.path_x
-                near_node.path_y = edge_node.path_y
-                near_node.parent = edge_node.parent
-                self.propagate_cost_to_leaves(new_node)
+                for node in self.node_list:
+                    if node.parent == self.node_list[i]:
+                        node.parent = edge_node
+                self.node_list[i] = edge_node
+                self.propagate_cost_to_leaves(self.node_list[i])
 
     def calc_new_cost(self, from_node, to_node):
         d, _ = self.calc_distance_and_angle(from_node, to_node)
@@ -284,7 +282,7 @@ def main():
             rrt_star.draw_graph()
             plt.plot([x for (x, y) in path], [y for (x, y) in path], 'r--')
             plt.grid(True)
-    plt.show()
+            plt.show()
 
 
 if __name__ == '__main__':

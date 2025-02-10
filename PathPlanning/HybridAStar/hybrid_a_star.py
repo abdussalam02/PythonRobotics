@@ -8,22 +8,16 @@ author: Zheng Zh (@Zhengzh)
 
 import heapq
 import math
-import os
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import cKDTree
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__))
-                + "/../ReedsSheppPath")
-try:
-    from dynamic_programming_heuristic import calc_distance_heuristic
-    import reeds_shepp_path_planning as rs
-    from car import move, check_car_collision, MAX_STEER, WB, plot_car,\
-        BUBBLE_R
-except Exception:
-    raise
+from dynamic_programming_heuristic import calc_distance_heuristic
+from ReedsSheppPath import reeds_shepp_path_planning as rs
+from car import move, check_car_collision, MAX_STEER, WB, plot_car, BUBBLE_R
 
 XY_GRID_RESOLUTION = 2.0  # [m]
 YAW_GRID_RESOLUTION = np.deg2rad(15.0)  # [rad]
@@ -111,12 +105,13 @@ def calc_next_node(current, steer, direction, config, ox, oy, kd_tree):
     x, y, yaw = current.x_list[-1], current.y_list[-1], current.yaw_list[-1]
 
     arc_l = XY_GRID_RESOLUTION * 1.5
-    x_list, y_list, yaw_list = [], [], []
+    x_list, y_list, yaw_list, direction_list = [], [], [], []
     for _ in np.arange(0, arc_l, MOTION_RESOLUTION):
         x, y, yaw = move(x, y, yaw, MOTION_RESOLUTION * direction, steer)
         x_list.append(x)
         y_list.append(y)
         yaw_list.append(yaw)
+        direction_list.append(direction == 1)
 
     if not check_car_collision(x_list, y_list, yaw_list, ox, oy, kd_tree):
         return None
@@ -140,7 +135,7 @@ def calc_next_node(current, steer, direction, config, ox, oy, kd_tree):
     cost = current.cost + added_cost + arc_l
 
     node = Node(x_ind, y_ind, yaw_ind, d, x_list,
-                y_list, yaw_list, [d],
+                y_list, yaw_list, direction_list,
                 parent_index=calc_index(current, config),
                 cost=cost, steer=steer)
 
@@ -287,7 +282,7 @@ def hybrid_a_star_planning(start, goal, ox, oy, xy_resolution, yaw_resolution):
     while True:
         if not openList:
             print("Error: Cannot find path, No open set")
-            return [], [], []
+            return Path([], [], [], [], 0)
 
         cost, c_id = heapq.heappop(pq)
         if c_id in openList:
@@ -317,7 +312,7 @@ def hybrid_a_star_planning(start, goal, ox, oy, xy_resolution, yaw_resolution):
             neighbor_index = calc_index(neighbor, config)
             if neighbor_index in closedList:
                 continue
-            if neighbor not in openList \
+            if neighbor_index not in openList \
                     or openList[neighbor_index].cost > neighbor.cost:
                 heapq.heappush(
                     pq, (calc_cost(neighbor, h_dp, config),

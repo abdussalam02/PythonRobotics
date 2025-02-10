@@ -6,11 +6,17 @@ author: Zheng Zh (@Zhengzh)
 
 """
 
+import sys
+import pathlib
+root_dir = pathlib.Path(__file__).parent.parent.parent
+sys.path.append(str(root_dir))
+
 from math import cos, sin, tan, pi
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial.transform import Rotation as Rot
+
+from utils.angle import rot_mat_2d
 
 WB = 3.0  # rear to front wheel
 W = 2.0  # width of car
@@ -45,7 +51,7 @@ def check_car_collision(x_list, y_list, yaw_list, ox, oy, kd_tree):
 
 def rectangle_check(x, y, yaw, ox, oy):
     # transform obstacles to base link frame
-    rot = Rot.from_euler('z', yaw).as_matrix()[0:2, 0:2]
+    rot = rot_mat_2d(yaw)
     for iox, ioy in zip(ox, oy):
         tx = iox - x
         ty = ioy - y
@@ -53,9 +59,9 @@ def rectangle_check(x, y, yaw, ox, oy):
         rx, ry = converted_xy[0], converted_xy[1]
 
         if not (rx > LF or rx < -LB or ry > W / 2.0 or ry < -W / 2.0):
-            return False  # no collision
+            return False  # collision
 
-    return True  # collision
+    return True  # no collision
 
 
 def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
@@ -71,7 +77,7 @@ def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
 def plot_car(x, y, yaw):
     car_color = '-k'
     c, s = cos(yaw), sin(yaw)
-    rot = Rot.from_euler('z', -yaw).as_matrix()[0:2, 0:2]
+    rot = rot_mat_2d(-yaw)
     car_outline_x, car_outline_y = [], []
     for rx, ry in zip(VRX, VRY):
         converted_xy = np.stack([rx, ry]).T @ rot
@@ -91,7 +97,7 @@ def pi_2_pi(angle):
 def move(x, y, yaw, distance, steer, L=WB):
     x += distance * cos(yaw)
     y += distance * sin(yaw)
-    yaw += pi_2_pi(distance * tan(steer) / L)  # distance/2
+    yaw = pi_2_pi(yaw + distance * tan(steer) / L)  # distance/2
 
     return x, y, yaw
 

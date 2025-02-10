@@ -10,16 +10,11 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 import sys
-import os
+import pathlib
+from utils.angle import angle_mod
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../../PathPlanning/CubicSpline/")
-
-try:
-    import cubic_spline_planner
-except:
-    raise
-
+from PathPlanning.CubicSpline import cubic_spline_planner
 
 Kp = 1.0  # speed proportional gain
 
@@ -29,7 +24,7 @@ R = np.eye(1)
 
 # parameters
 dt = 0.1  # time tick[s]
-L = 0.5  # Wheel base of the vehicle [m]
+L = 0.5  # Wheelbase of the vehicle [m]
 max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
 
 show_animation = True
@@ -60,14 +55,14 @@ def update(state, a, delta):
     return state
 
 
-def PIDControl(target, current):
+def pid_control(target, current):
     a = Kp * (target - current)
 
     return a
 
 
 def pi_2_pi(angle):
-    return (angle + math.pi) % (2 * math.pi) - math.pi
+    return angle_mod(angle)
 
 
 def solve_DARE(A, B, Q, R):
@@ -75,10 +70,11 @@ def solve_DARE(A, B, Q, R):
     solve a discrete time_Algebraic Riccati equation (DARE)
     """
     X = Q
-    maxiter = 150
+    Xn = Q
+    max_iter = 150
     eps = 0.01
 
-    for i in range(maxiter):
+    for i in range(max_iter):
         Xn = A.T @ X @ A - A.T @ X @ B @ \
             la.inv(R + B.T @ X @ B) @ B.T @ X @ A + Q
         if (abs(Xn - X)).max() < eps:
@@ -183,7 +179,7 @@ def closed_loop_prediction(cx, cy, cyaw, ck, speed_profile, goal):
         dl, target_ind, e, e_th = lqr_steering_control(
             state, cx, cy, cyaw, ck, e, e_th)
 
-        ai = PIDControl(speed_profile[target_ind], state.v)
+        ai = pid_control(speed_profile[target_ind], state.v)
         state = update(state, ai, dl)
 
         if abs(state.v) <= stop_speed:
@@ -207,8 +203,9 @@ def closed_loop_prediction(cx, cy, cyaw, ck, speed_profile, goal):
         if target_ind % 1 == 0 and show_animation:
             plt.cla()
             # for stopping simulation with the esc key.
-            plt.gcf().canvas.mpl_connect('key_release_event',
-                    lambda event: [exit(0) if event.key == 'escape' else None])
+            plt.gcf().canvas.mpl_connect(
+                'key_release_event',
+                lambda event: [exit(0) if event.key == 'escape' else None])
             plt.plot(cx, cy, "-r", label="course")
             plt.plot(x, y, "ob", label="trajectory")
             plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")

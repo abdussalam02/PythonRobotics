@@ -34,7 +34,7 @@ def main():
     goal = (58, 56)
     grid = get_occupancy_grid(arm, obstacles)
     route = astar_torus(grid, start, goal)
-    if len(route) >= 0:
+    if route:
         animate(grid, arm, route)
 
 
@@ -66,7 +66,7 @@ def detect_collision(line_seg, circle):
     """
     Determines whether a line segment (arm link) is in contact
     with a circle (obstacle).
-    Credit to: http://doswa.com/2009/07/13/circle-segment-intersectioncollision.html
+    Credit to: https://web.archive.org/web/20200130224918/http://doswa.com/2009/07/13/circle-segment-intersectioncollision.html
     Args:
         line_seg: List of coordinates of line segment endpoints e.g. [[1, 1], [2, 2]]
         circle: List of circle coordinates and radius e.g. [0, 0, 0.5] is a circle centered
@@ -105,7 +105,7 @@ def get_occupancy_grid(arm, obstacles):
     Args:
         arm: An instance of NLinkArm
         obstacles: A list of obstacles, with each obstacle defined as a list
-                   of xy coordinates and a radius. 
+                   of xy coordinates and a radius.
 
     Returns:
         Occupancy grid in joint space
@@ -136,7 +136,7 @@ def astar_torus(grid, start_node, goal_node):
 
     Args:
         grid: An occupancy grid (ndarray)
-        start_node: Initial joint configuation (tuple)
+        start_node: Initial joint configuration (tuple)
         goal_node: Goal joint configuration (tuple)
 
     Returns:
@@ -189,7 +189,7 @@ def astar_torus(grid, start_node, goal_node):
         while parent_map[route[0][0]][route[0][1]] != ():
             route.insert(0, parent_map[route[0][0]][route[0][1]])
 
-        print("The route found covers %d grid cells." % len(route))
+        print(f"The route found covers {len(route)} grid cells.")
         for i in range(1, len(route)):
             grid[route[i]] = 6
             plt.cla()
@@ -234,16 +234,16 @@ def calc_heuristic_map(M, goal_node):
     for i in range(heuristic_map.shape[0]):
         for j in range(heuristic_map.shape[1]):
             heuristic_map[i, j] = min(heuristic_map[i, j],
-                                      i + 1 + heuristic_map[M - 1, j],
-                                      M - i + heuristic_map[0, j],
-                                      j + 1 + heuristic_map[i, M - 1],
-                                      M - j + heuristic_map[i, 0]
+                                      M - i - 1 + heuristic_map[M - 1, j],
+                                      i + heuristic_map[0, j],
+                                      M - j - 1 + heuristic_map[i, M - 1],
+                                      j + heuristic_map[i, 0]
                                       )
 
     return heuristic_map
 
 
-class NLinkArm(object):
+class NLinkArm:
     """
     Class for controlling and plotting a planar arm with an arbitrary number of links.
     """

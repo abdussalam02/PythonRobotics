@@ -9,12 +9,16 @@ Ensemble Kalman filtering
 (https://rmets.onlinelibrary.wiley.com/doi/10.1256/qj.05.135)
 
 """
+import sys
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
 
 import math
-
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial.transform import Rotation as Rot
+from utils.angle import angle_mod
+
+from utils.angle import rot_mat_2d
 
 #  Simulation parameter
 Q_sim = np.diag([0.2, np.deg2rad(1.0)]) ** 2
@@ -168,8 +172,7 @@ def plot_covariance_ellipse(xEst, PEst):  # pragma: no cover
     x = [a * math.cos(it) for it in t]
     y = [b * math.sin(it) for it in t]
     angle = math.atan2(eig_vec[1, big_ind], eig_vec[0, big_ind])
-    rot = Rot.from_euler('z', angle).as_matrix()[0:2, 0:2]
-    fx = np.stack([x, y]).T @ rot
+    fx = np.stack([x, y]).T @ rot_mat_2d(angle)
 
     px = np.array(fx[:, 0] + xEst[0, 0]).flatten()
     py = np.array(fx[:, 1] + xEst[1, 0]).flatten()
@@ -177,7 +180,7 @@ def plot_covariance_ellipse(xEst, PEst):  # pragma: no cover
 
 
 def pi_2_pi(angle):
-    return (angle + math.pi) % (2 * math.pi) - math.pi
+    return angle_mod(angle)
 
 
 def main():

@@ -6,17 +6,15 @@ author: Atsushi Sakai (@Atsushi_twi)
 
 """
 
-import os
 import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-from PathPlanning.VisibilityRoadMap.geometry import Geometry
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
-                "/../VoronoiRoadMap/")
-from dijkstra_search import DijkstraSearch
+from VisibilityRoadMap.geometry import Geometry
+from VoronoiRoadMap.dijkstra_search import DijkstraSearch
 
 show_animation = True
 
@@ -64,8 +62,9 @@ class VisibilityRoadMap:
             for (vx, vy) in zip(cvx_list, cvy_list):
                 nodes.append(DijkstraSearch.Node(vx, vy))
 
-        for node in nodes:
-            plt.plot(node.x, node.y, "xr")
+        if self.do_plot:
+            for node in nodes:
+                plt.plot(node.x, node.y, "xr")
 
         return nodes
 

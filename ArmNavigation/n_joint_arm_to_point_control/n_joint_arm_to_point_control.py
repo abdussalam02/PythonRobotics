@@ -5,12 +5,13 @@ Author: Daniel Ingram (daniel-s-ingram)
         Atsushi Sakai (@Atsushi_twi)
 """
 
-import numpy as np
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+import numpy as np
 from ArmNavigation.n_joint_arm_to_point_control.NLinkArm import NLinkArm
+from utils.angle import angle_mod
 
 # Simulation parameters
 Kp = 2
@@ -159,7 +160,7 @@ def ang_diff(theta1, theta2):
     """
     Returns the difference between two angles in the range -pi to +pi
     """
-    return (theta1 - theta2 + np.pi) % (2 * np.pi) - np.pi
+    return angle_mod(theta1 - theta2)
 
 
 if __name__ == '__main__':
